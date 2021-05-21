@@ -1,0 +1,68 @@
+package registry
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"sync"
+)
+
+// 注册服务的web service
+
+//两个常量
+const ServerPort = ":30000"
+
+// 服务注册 web服务的地址，通过该地址可以查询到那些服务注册了
+const ServicesURL = "http://localhost" + ServerPort + "/services"
+
+type registry struct {
+	registrations []Registration
+	mutex         *sync.Mutex
+}
+
+func (r *registry) add(reg Registration) error {
+	r.mutex.Lock()
+	r.registrations = append(r.registrations, reg)
+	r.mutex.Unlock()
+	return nil
+}
+
+var reg = registry{
+	registrations: make([]Registration, 0),
+	mutex:         new(sync.Mutex),
+}
+
+type RegistryService struct{}
+
+func (s RegistryService) ServerHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Println("Request received")
+	switch r.Method {
+	case http.MethodPost:
+		dec := json.NewDecoder(r.Body)
+		var r Registration
+		err := dec.Decode(&r)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		log.Printf("Adding service: %v with URL:%s\n", r.ServiceName, r.ServiceUrl)
+		err = reg.add(r)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	case http.MethodGet:
+		b, err := json.Marshal(reg.registrations)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		n, _ := w.Write(b)
+		fmt.Println(n)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+}
