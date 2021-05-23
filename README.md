@@ -5,7 +5,7 @@
 通过该项目的练习，达到分布式系统的入门
 #### 软件架构
 软件架构说明
-
+![图片](https://mmbiz.qpic.cn/mmbiz_png/sYkAFYkmILMXeHLOdzgfXWcVYEr9iaNGHibZAZ73C65MedgDjMjVaXECdTHxF7gtNicEXPrys0F4AFpdPUDkWjuUw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
 
 #### 安装教程
 
