@@ -26,6 +26,10 @@ func startService(ctx context.Context, serviceName registry.ServiceName, host, p
 
 	go func() {
 		log.Println(srv.ListenAndServe()) // 如果服务启动发生错误就返回该错误
+		err :=registry.ShutdownService("http://"+srv.Addr)
+		if err !=nil{
+			log.Println(err)
+		}
 		cancel()                          //调用上下文的cancel关闭
 	}()
 	//用户可以手动停止服务
@@ -35,6 +39,10 @@ func startService(ctx context.Context, serviceName registry.ServiceName, host, p
 		var s string
 		fmt.Scanln(&s)
 		//继续执行就停止服务
+		err:=registry.ShutdownService("http://"+srv.Addr)
+		if err !=nil{
+			log.Println(err)
+		}
 		srv.Shutdown(ctx)
 		cancel()
 	}()
