@@ -16,6 +16,8 @@ func main() {
 	r := registry.Registration{
 		ServiceName: registry.LogService,
 		ServiceUrl:  serviceAddr,
+		RequiredServices: make([]registry.ServiceName, 0),
+		ServiceUpdateURL: serviceAddr+"/services",
 	}
 	ctx, err := service.Start(context.Background(), r, host,
 		port, log.RegisterHandlers)
