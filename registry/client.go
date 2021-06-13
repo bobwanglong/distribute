@@ -12,7 +12,7 @@ import (
 )
 
 func RegisterService(r Registration)error{
-	//
+	//服务更新通知url
 	serviceUpdateUrl,err :=url.Parse(r.ServiceUpdateURL)
 	if err !=nil{
 		return err
@@ -51,6 +51,7 @@ func (suh *serviceUpdateHanlder)ServeHTTP(w http.ResponseWriter,r *http.Request)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	fmt.Println("Updated recevied ",p)
 	prov.Update(p)
 }
 func ShutdownService(url string)error{

@@ -28,11 +28,21 @@ func (r *registry) add(reg Registration) error {
 	r.registrations = append(r.registrations, reg)
 	r.mutex.Unlock()
 	// 添加依赖
-	r.sendRequiredServices(reg)
-	return nil
+	err := r.sendRequiredServices(reg)
+
+	// 服务变更通知
+	r.notify(patch{
+		Added: []patchEntry{
+			{
+				Name: reg.ServiceName,
+				URL:  reg.ServiceUrl,
+			},
+		},
+	})
+	return err
 }
 
-func (r *registry) sendRequiredServices(reg Registration) {
+func (r *registry) sendRequiredServices(reg Registration) error {
 	r.mutex.RLock() // 读锁
 	defer r.mutex.RUnlock()
 
@@ -51,6 +61,7 @@ func (r *registry) sendRequiredServices(reg Registration) {
 	if err != nil {
 
 	}
+	return nil
 }
 
 //
@@ -70,6 +81,16 @@ func (r *registry) sendPatch(p patch, url string) error {
 func (r *registry) remove(url string) error {
 	for i, u := range r.registrations {
 		if u.ServiceUrl == url {
+			//
+			r.notify(patch{
+				Removed: []patchEntry{
+					{
+						Name: u.ServiceName,
+						URL:  u.ServiceUrl,
+					},
+				},
+			},
+			)
 			r.mutex.Lock()
 			r.registrations = append(r.registrations[:i], r.registrations[i+1:]...)
 			r.mutex.Unlock()
@@ -78,6 +99,40 @@ func (r *registry) remove(url string) error {
 
 	}
 	return fmt.Errorf("service at url %s not found", url)
+}
+
+//
+func (r registry) notify(fullPatch patch) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+	for _, reg := range r.registrations {
+		go func(reg Registration) {
+			for _, reqService := range reg.RequiredServices {
+				p := patch{Added: []patchEntry{}, Removed: []patchEntry{}}
+				sendUpdate := false
+				for _, added := range fullPatch.Added {
+					if added.Name == reqService {
+						p.Added = append(p.Added, added)
+						sendUpdate = true
+					}
+
+				}
+				for _, removed := range fullPatch.Removed {
+					if removed.Name == reqService {
+						p.Removed = append(p.Removed, removed)
+						sendUpdate = true
+					}
+				}
+				if sendUpdate {
+					err := r.sendPatch(p, reg.ServiceUpdateURL)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+				}
+			}
+		}(reg)
+	}
 }
 
 var reg = registry{
