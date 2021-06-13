@@ -5,6 +5,7 @@ type Registration struct {
 	ServiceUrl  string
 	RequiredServices []ServiceName // 依赖服务
 	ServiceUpdateURL string // 提供通知更新的URL
+	HeartbeatURL string
 }
 
 type ServiceName string
